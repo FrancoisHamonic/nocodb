@@ -38,7 +38,12 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
-
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+  
 jobs:
   buildx:
     runs-on: ubuntu-latest
@@ -52,7 +57,7 @@ jobs:
       - name: Get Docker Repository
         id: get-docker-repository
         run: |
-          DOCKER_REPOSITORY=nocodb
+          DOCKER_REPOSITORY=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           DOCKER_BUILD_TAG=${{ github.event.inputs.tag || inputs.tag }}
           DOCKER_BUILD_LATEST_TAG=latest
           if [[ "$DOCKER_BUILD_TAG" =~ "-beta." ]]; then
@@ -123,8 +128,9 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
         uses: docker/build-push-action@v3.2.0
